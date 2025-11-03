@@ -3,14 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firebase 실시간 채팅 앱 (Markdown 지원)</title>
-
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/dompurify.min.js"></script>
-
+    <title>Firebase 실시간 채팅 앱</title>
     <style>
-        /* CSS는 변경 없음 */
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
                 Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -65,7 +59,7 @@
             max-width: 80%;
             word-wrap: break-word;
         }
-        
+
         .message-username {
             display: block;
             font-size: 0.8em;
@@ -79,27 +73,11 @@
             color: #212529;
             margin: 0;
         }
-        
-        .message-text p { margin: 0 0 5px 0; }
-        .message-text p:last-child { margin-bottom: 0; }
-        .message-text a { color: #0056b3; }
-        .message-text pre {
-            background-color: #333;
-            color: #f8f8f2;
-            padding: 10px;
-            border-radius: 4px;
-            overflow-x: auto;
-        }
-        .message-text code { font-family: monospace; }
-        .message-text blockquote {
-            border-left: 3px solid #ccc;
-            padding-left: 10px;
-            margin-left: 0;
-            color: #6a737d;
-        }
 
         #chat-form {
             display: flex;
+            align-items: center;
+            flex-wrap: wrap;
             padding: 15px;
             background-color: #f8f9fa;
             border-top: 1px solid #ddd;
@@ -108,23 +86,32 @@
         }
 
         #username-input {
-            width: 100px;
-            padding: 10px;
+            width: 90px;
+            padding: 8px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            margin-right: 10px;
+            margin-right: 8px;
         }
 
         #message-input {
             flex-grow: 1;
-            padding: 10px;
+            padding: 8px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            margin-right: 10px;
+            margin-right: 8px;
+            min-width: 100px;
+        }
+
+        #font-size-select, #color-picker {
+            margin-right: 8px;
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            cursor: pointer;
         }
 
         #send-button {
-            padding: 10px 15px;
+            padding: 8px 14px;
             border: none;
             background-color: #007bff;
             color: white;
@@ -144,21 +131,32 @@
         <header>Firebase 실시간 채팅방</header>
 
         <div class="chat-window" id="chat-window">
-            <ul id="message-list">
-                </ul>
+            <ul id="message-list"></ul>
         </div>
 
+        <!-- 🔹 입력창 + 글자 옵션 UI -->
         <form id="chat-form">
             <input type="text" id="username-input" placeholder="이름" required>
+
+            <!-- 글자 크기 선택 -->
+            <select id="font-size-select" title="글자 크기">
+                <option value="12px">12</option>
+                <option value="14px" selected>14</option>
+                <option value="16px">16</option>
+                <option value="18px">18</option>
+                <option value="20px">20</option>
+            </select>
+
+            <!-- 글자 색상 선택 -->
+            <input type="color" id="color-picker" value="#000000" title="글자 색상">
+
             <input type="text" id="message-input" placeholder="메시지를 입력하세요..." required>
             <button type="submit" id="send-button">전송</button>
         </form>
     </div>
 
     <script type="module">
-        // 1. Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
         import { 
             getDatabase, 
             ref, 
@@ -169,93 +167,80 @@
             orderByChild 
         } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
 
-        // 2. Firebase 설정
+        // Firebase 설정
         const firebaseConfig = {
-            apiKey: "AIzaSyB5TAYEoAEawpaYr1tR373OhCYumOc4B7o",
-            authDomain: "chat-33290.firebaseapp.com",
-            databaseURL: "https://chat-33290-default-rtdb.firebaseio.com", 
-            projectId: "chat-33290",
-            storageBucket: "chat-33290.firebasestorage.app",
-            messagingSenderId: "894357766876",
-            appId: "1:894357766876:web:bd27cd3f1da7e29b3eaa19",
-            measurementId: "G-B0L4WFFKXK"
+            apiKey: "AIzaSyB5TAYEoAEawpaYr1tR373OhCYumOc4B7o",
+            authDomain: "chat-33290.firebaseapp.com",
+            databaseURL: "https://chat-33290-default-rtdb.firebaseio.com",
+            projectId: "chat-33290",
+            storageBucket: "chat-33290.firebasestorage.app",
+            messagingSenderId: "894357766876",
+            appId: "1:894357766876:web:bd27cd3f1da7e29b3eaa19"
         };
 
-        // 3. Firebase 앱 초기화
         const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app); 
         const database = getDatabase(app);
         const messagesRef = ref(database, 'messages');
 
-        // 4. HTML 요소
         const chatForm = document.getElementById('chat-form');
         const usernameInput = document.getElementById('username-input');
         const messageInput = document.getElementById('message-input');
+        const fontSizeSelect = document.getElementById('font-size-select');
+        const colorPicker = document.getElementById('color-picker');
         const messageList = document.getElementById('message-list');
         const chatWindow = document.getElementById('chat-window');
 
-        // 5. 폼 제출 이벤트
-        chatForm.addEventListener('submit', function(event) {
-            event.preventDefault(); 
+        // 메시지 전송
+        chatForm.addEventListener('submit', (event) => {
+            event.preventDefault();
 
             const username = usernameInput.value.trim();
             const message = messageInput.value.trim();
+            const color = colorPicker.value;
+            const size = fontSizeSelect.value;
 
-            if (username === '' || message === '') {
+            if (!username || !message) {
                 alert('이름과 메시지를 모두 입력해주세요.');
                 return;
             }
 
+            // 🔹 색상과 크기 포함해서 DB 저장
             push(messagesRef, {
-                username: username,
-                message: message,
-                timestamp: serverTimestamp() 
+                username,
+                message,
+                color,
+                size,
+                timestamp: serverTimestamp()
             });
 
             messageInput.value = '';
             messageInput.focus();
         });
 
-        // 6. Firebase 새 메시지 수신
+        // 🔹 실시간 메시지 표시
         const messagesQuery = query(messagesRef, orderByChild('timestamp'));
+        onChildAdded(messagesQuery, (snapshot) => {
+            const data = snapshot.val();
 
-        onChildAdded(messagesQuery, function(snapshot) {
-            const data = snapshot.val(); 
-            const username = data.username;
-            const message = data.message; 
-
-            // ---- DOM 생성 로직 (마크다운 적용) ----
             const li = document.createElement('li');
             li.className = 'message-item';
 
             const usernameSpan = document.createElement('span');
             usernameSpan.className = 'message-username';
-            usernameSpan.textContent = username;
+            usernameSpan.textContent = data.username;
 
-            // 'p' -> 'div'로 변경 (이전 수정)
-            const messageText = document.createElement('div'); 
+            const messageText = document.createElement('p');
             messageText.className = 'message-text';
+            messageText.textContent = data.message;
 
-            // 3. [변경] 마크다운 -> HTML 변환 및 보안 처리
-            // 3-1. 원본 메시지를 Marked.js로 HTML 변환
-            const unsafeHtml = marked.parse(message);
-            
-            // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-            // *** 2차 수정된 부분 ***
-            // <script type="module"> 에서는 window 전역 객체를 명시해야 합니다.
-            const safeHtml = window.DOMPurify.sanitize(unsafeHtml);
-            // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+            // 🔹 색상 / 크기 적용
+            messageText.style.color = data.color || '#000';
+            messageText.style.fontSize = data.size || '14px';
 
-            // 3-3. .textContent 대신 .innerHTML로 삽입
-            messageText.innerHTML = safeHtml;
-            
             li.appendChild(usernameSpan);
             li.appendChild(messageText);
 
             messageList.appendChild(li);
-            // ---- DOM 생성 로직 끝 ----
-
-            // 새 메시지가 추가되면 스크롤을 맨 아래로 이동
             chatWindow.scrollTop = chatWindow.scrollHeight;
         });
     </script>
