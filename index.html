@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firebase 실시간 채팅 앱</title>
+    <title>Firebase 실시간 채팅 앱 (Markdown 지원)</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/dompurify.min.js"></script>
+
     <style>
         /* CSS는 회원님이 만드신 원본과 100% 동일합니다 */
         body {
@@ -74,6 +79,33 @@
             color: #212529;
             margin: 0;
         }
+        
+        /* 마크다운으로 생성된 HTML 태그 스타일 추가 */
+        .message-text p {
+            margin: 0 0 5px 0; /* 단락 간격 */
+        }
+        .message-text p:last-child {
+            margin-bottom: 0;
+        }
+        .message-text a {
+            color: #0056b3;
+        }
+        .message-text pre {
+            background-color: #333;
+            color: #f8f8f2;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .message-text code {
+            font-family: monospace;
+        }
+        .message-text blockquote {
+            border-left: 3px solid #ccc;
+            padding-left: 10px;
+            margin-left: 0;
+            color: #6a737d;
+        }
 
         #chat-form {
             display: flex;
@@ -133,11 +165,9 @@
     </div>
 
     <script type="module">
-        // 1. Firebase SDK에서 필요한 함수들을 import
+        // 1. Firebase SDK (기존과 동일)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
-        
-        // 1-1. Realtime Database에 필요한 함수들 추가로 import
         import { 
             getDatabase, 
             ref, 
@@ -148,12 +178,11 @@
             orderByChild 
         } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
 
-        // 2. 회원님이 제공한 Firebase 설정(config) 객체
-        // (chat-33290 프로젝트)
+        // 2. Firebase 설정 (기존과 동일)
         const firebaseConfig = {
             apiKey: "AIzaSyB5TAYEoAEawpaYr1tR373OhCYumOc4B7o",
             authDomain: "chat-33290.firebaseapp.com",
-            databaseURL: "https://chat-33290-default-rtdb.firebaseio.com", // Realtime DB URL 추가
+            databaseURL: "https://chat-33290-default-rtdb.firebaseio.com", 
             projectId: "chat-33290",
             storageBucket: "chat-33290.firebasestorage.app",
             messagingSenderId: "894357766876",
@@ -161,22 +190,22 @@
             measurementId: "G-B0L4WFFKXK"
         };
 
-        // 3. Firebase 앱 및 서비스 초기화
+        // 3. Firebase 앱 초기화 (기존과 동일)
         const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app); // (참고용)
-        const database = getDatabase(app); // Realtime Database 가져오기
-        const messagesRef = ref(database, 'messages'); // 'messages'라는 경로(채팅방) 참조
+        const analytics = getAnalytics(app); 
+        const database = getDatabase(app);
+        const messagesRef = ref(database, 'messages');
 
-        // 4. 필요한 HTML 요소들을 변수에 저장 (기존과 동일)
+        // 4. HTML 요소 (기존과 동일)
         const chatForm = document.getElementById('chat-form');
         const usernameInput = document.getElementById('username-input');
         const messageInput = document.getElementById('message-input');
         const messageList = document.getElementById('message-list');
         const chatWindow = document.getElementById('chat-window');
 
-        // 5. 폼 제출 이벤트 (메시지 전송) - 모듈식 구문으로 변경
+        // 5. 폼 제출 이벤트 (기존과 동일)
         chatForm.addEventListener('submit', function(event) {
-            event.preventDefault(); // 페이지 새로고침 방지
+            event.preventDefault(); 
 
             const username = usernameInput.value.trim();
             const message = messageInput.value.trim();
@@ -186,30 +215,25 @@
                 return;
             }
 
-            // [변경] 모듈식: push(레퍼런스, 데이터)
             push(messagesRef, {
                 username: username,
                 message: message,
-                timestamp: serverTimestamp() // [변경] 모듈식: serverTimestamp() 함수 호출
+                timestamp: serverTimestamp() 
             });
 
-            // 메시지 입력창 비우기 (이름은 유지)
             messageInput.value = '';
             messageInput.focus();
         });
 
-        // 6. Firebase에서 새 메시지 수신 (실시간 리스너) - 모듈식 구문으로 변경
-        
-        // 6a. [변경] 정렬 쿼리 생성 (시간순으로 정렬)
+        // 6. Firebase 새 메시지 수신 (*** 로직 변경 ***)
         const messagesQuery = query(messagesRef, orderByChild('timestamp'));
 
-        // 6b. [변경] 리스너 부착: onChildAdded(쿼리, 콜백함수)
         onChildAdded(messagesQuery, function(snapshot) {
-            const data = snapshot.val(); // DB에서 가져온 메시지 객체
+            const data = snapshot.val(); 
             const username = data.username;
-            const message = data.message;
+            const message = data.message; // DB에 저장된 원본 마크다운 텍스트
 
-            // ---- 기존의 DOM 생성 로직과 100% 동일 ----
+            // ---- DOM 생성 로직 (마크다운 적용) ----
             const li = document.createElement('li');
             li.className = 'message-item';
 
@@ -219,8 +243,17 @@
 
             const messageText = document.createElement('p');
             messageText.className = 'message-text';
-            messageText.textContent = message;
 
+            // 3. [변경] 마크다운 -> HTML 변환 및 보안 처리
+            // 3-1. 원본 메시지를 Marked.js로 HTML 변환
+            const unsafeHtml = marked.parse(message);
+            
+            // 3-2. DOMPurify로 HTML을 소독 (XSS 방지)
+            const safeHtml = DOMPurify.sanitize(unsafeHtml);
+
+            // 3-3. .textContent 대신 .innerHTML로 삽입
+            messageText.innerHTML = safeHtml;
+            
             li.appendChild(usernameSpan);
             li.appendChild(messageText);
 
