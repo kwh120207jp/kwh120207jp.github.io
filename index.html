@@ -225,7 +225,7 @@
             messageInput.focus();
         });
 
-        // 6. Firebase 새 메시지 수신 (*** 로직 변경 ***)
+        // 6. Firebase 새 메시지 수신 (*** 수정된 로직 ***)
         const messagesQuery = query(messagesRef, orderByChild('timestamp'));
 
         onChildAdded(messagesQuery, function(snapshot) {
@@ -241,7 +241,12 @@
             usernameSpan.className = 'message-username';
             usernameSpan.textContent = username;
 
-            const messageText = document.createElement('p');
+            // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+            // *** 수정된 부분 ***
+            // <p> 대신 <div>를 사용해야 마크다운이 생성하는 <p>와 충돌하지 않습니다.
+            const messageText = document.createElement('div');
+            // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
             messageText.className = 'message-text';
 
             // 3. [변경] 마크다운 -> HTML 변환 및 보안 처리
