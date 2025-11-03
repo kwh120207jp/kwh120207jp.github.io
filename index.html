@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>간단 채팅 앱</title>
+    <title>Firebase 실시간 채팅 앱</title>
     <style>
-        /* CSS 스타일링 */
+        /* CSS는 회원님이 만드신 원본과 100% 동일합니다 */
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
                 Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -39,11 +39,10 @@
             border-top-right-radius: 8px;
         }
 
-        /* 메시지 창 */
         .chat-window {
-            flex-grow: 1; /* 남은 공간을 모두 차지 */
+            flex-grow: 1;
             padding: 20px;
-            overflow-y: auto; /* 메시지 많아지면 스크롤 */
+            overflow-y: auto;
             border-bottom: 1px solid #ddd;
         }
 
@@ -59,13 +58,12 @@
             background-color: #e9ecef;
             border-radius: 8px;
             max-width: 80%;
-            word-wrap: break-word; /* 긴 텍스트 줄바꿈 */
+            word-wrap: break-word;
         }
         
-        /* 유저 이름 스타일 (요청하신 부분) */
         .message-username {
-            display: block; /* 이름이 메시지 위에 오도록 */
-            font-size: 0.8em; /* 작게 표시 */
+            display: block;
+            font-size: 0.8em;
             font-weight: bold;
             color: #495057;
             margin-bottom: 4px;
@@ -77,7 +75,6 @@
             margin: 0;
         }
 
-        /* 입력 폼 */
         #chat-form {
             display: flex;
             padding: 15px;
@@ -88,7 +85,7 @@
         }
 
         #username-input {
-            width: 100px; /* 이름 입력칸 */
+            width: 100px;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
@@ -96,7 +93,7 @@
         }
 
         #message-input {
-            flex-grow: 1; /* 메시지 입력칸이 남은 공간 차지 */
+            flex-grow: 1;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
@@ -121,7 +118,7 @@
 <body>
 
     <div class="chat-container">
-        <header>간단 채팅방</header>
+        <header>Firebase 실시간 채팅방</header>
 
         <div class="chat-window" id="chat-window">
             <ul id="message-list">
@@ -135,57 +132,102 @@
         </form>
     </div>
 
-    <script>
-        // JavaScript 기능 구현
+    <script type="module">
+        // 1. Firebase SDK에서 필요한 함수들을 import
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
+        
+        // 1-1. Realtime Database에 필요한 함수들 추가로 import
+        import { 
+            getDatabase, 
+            ref, 
+            push, 
+            onChildAdded, 
+            serverTimestamp, 
+            query, 
+            orderByChild 
+        } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
 
-        // 필요한 HTML 요소들을 변수에 저장
+        // 2. 회원님이 제공한 Firebase 설정(config) 객체
+        // (chat-33290 프로젝트)
+        const firebaseConfig = {
+            apiKey: "AIzaSyB5TAYEoAEawpaYr1tR373OhCYumOc4B7o",
+            authDomain: "chat-33290.firebaseapp.com",
+            databaseURL: "https://chat-33290-default-rtdb.firebaseio.com", // Realtime DB URL 추가
+            projectId: "chat-33290",
+            storageBucket: "chat-33290.firebasestorage.app",
+            messagingSenderId: "894357766876",
+            appId: "1:894357766876:web:bd27cd3f1da7e29b3eaa19",
+            measurementId: "G-B0L4WFFKXK"
+        };
+
+        // 3. Firebase 앱 및 서비스 초기화
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app); // (참고용)
+        const database = getDatabase(app); // Realtime Database 가져오기
+        const messagesRef = ref(database, 'messages'); // 'messages'라는 경로(채팅방) 참조
+
+        // 4. 필요한 HTML 요소들을 변수에 저장 (기존과 동일)
         const chatForm = document.getElementById('chat-form');
         const usernameInput = document.getElementById('username-input');
         const messageInput = document.getElementById('message-input');
         const messageList = document.getElementById('message-list');
         const chatWindow = document.getElementById('chat-window');
 
-        // 폼 제출(전송 버튼 클릭) 이벤트 처리
+        // 5. 폼 제출 이벤트 (메시지 전송) - 모듈식 구문으로 변경
         chatForm.addEventListener('submit', function(event) {
-            // 1. 폼의 기본 동작(페이지 새로고침) 방지
-            event.preventDefault();
+            event.preventDefault(); // 페이지 새로고침 방지
 
-            // 2. 입력된 이름과 메시지 값 가져오기 (앞뒤 공백 제거)
             const username = usernameInput.value.trim();
             const message = messageInput.value.trim();
 
-            // 3. 이름과 메시지가 모두 입력되었는지 확인
             if (username === '' || message === '') {
                 alert('이름과 메시지를 모두 입력해주세요.');
-                return; // 함수 종료
+                return;
             }
 
-            // 4. 새로운 메시지 아이템(li) 생성
+            // [변경] 모듈식: push(레퍼런스, 데이터)
+            push(messagesRef, {
+                username: username,
+                message: message,
+                timestamp: serverTimestamp() // [변경] 모듈식: serverTimestamp() 함수 호출
+            });
+
+            // 메시지 입력창 비우기 (이름은 유지)
+            messageInput.value = '';
+            messageInput.focus();
+        });
+
+        // 6. Firebase에서 새 메시지 수신 (실시간 리스너) - 모듈식 구문으로 변경
+        
+        // 6a. [변경] 정렬 쿼리 생성 (시간순으로 정렬)
+        const messagesQuery = query(messagesRef, orderByChild('timestamp'));
+
+        // 6b. [변경] 리스너 부착: onChildAdded(쿼리, 콜백함수)
+        onChildAdded(messagesQuery, function(snapshot) {
+            const data = snapshot.val(); // DB에서 가져온 메시지 객체
+            const username = data.username;
+            const message = data.message;
+
+            // ---- 기존의 DOM 생성 로직과 100% 동일 ----
             const li = document.createElement('li');
-            li.className = 'message-item'; // CSS 클래스 적용
+            li.className = 'message-item';
 
-            // 5. 유저 이름을 표시할 span 태그 생성 (요청하신 기능)
             const usernameSpan = document.createElement('span');
-            usernameSpan.className = 'message-username'; // CSS 클래스 적용
-            usernameSpan.textContent = username; // 이름 설정
+            usernameSpan.className = 'message-username';
+            usernameSpan.textContent = username;
 
-            // 6. 메시지 본문을 표시할 p 태그 생성
             const messageText = document.createElement('p');
-            messageText.className = 'message-text'; // CSS 클래스 적용
-            messageText.textContent = message; // 메시지 설정
+            messageText.className = 'message-text';
+            messageText.textContent = message;
 
-            // 7. li 요소 안에 이름(span)과 메시지(p) 추가
             li.appendChild(usernameSpan);
             li.appendChild(messageText);
 
-            // 8. 완성된 li를 메시지 목록(ul)에 추가
             messageList.appendChild(li);
+            // ---- DOM 생성 로직 끝 ----
 
-            // 9. 메시지 입력 후 입력창 비우기
-            messageInput.value = '';
-            messageInput.focus(); // 메시지 입력창에 다시 포커스
-
-            // 10. 새 메시지가 추가되면 스크롤을 맨 아래로 이동
+            // 새 메시지가 추가되면 스크롤을 맨 아래로 이동
             chatWindow.scrollTop = chatWindow.scrollHeight;
         });
     </script>
