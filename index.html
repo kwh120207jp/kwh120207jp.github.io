@@ -36,7 +36,29 @@
             font-size: 1.2rem;
             border-top-left-radius: 8px;
             border-top-right-radius: 8px;
+            position: relative; /* 🔹 버튼 위치 지정을 위해 추가 */
         }
+
+        /* 🔹 DB 초기화 버튼 스타일 추가 */
+        #reset-db-button {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #dc3545; /* 경고를 의미하는 빨간색 */
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        #reset-db-button:hover {
+            background-color: #c82333;
+        }
+
 
         .chat-window {
             flex-grow: 1;
@@ -128,17 +150,18 @@
 <body>
 
     <div class="chat-container">
-        <header>Firebase 실시간 채팅방</header>
+        <header>
+            Firebase 실시간 채팅방
+            <button id="reset-db-button">초기화</button>
+        </header>
 
         <div class="chat-window" id="chat-window">
             <ul id="message-list"></ul>
         </div>
 
-        <!-- 🔹 입력창 + 글자 옵션 UI -->
         <form id="chat-form">
             <input type="text" id="username-input" placeholder="이름" required>
 
-            <!-- 글자 크기 선택 -->
             <select id="font-size-select" title="글자 크기">
                 <option value="12px">12</option>
                 <option value="14px" selected>14</option>
@@ -147,7 +170,6 @@
                 <option value="20px">20</option>
             </select>
 
-            <!-- 글자 색상 선택 -->
             <input type="color" id="color-picker" value="#000000" title="글자 색상">
 
             <input type="text" id="message-input" placeholder="메시지를 입력하세요..." required>
@@ -164,10 +186,11 @@
             onChildAdded, 
             serverTimestamp, 
             query, 
-            orderByChild 
+            orderByChild,
+            remove /* 🔹 remove 함수 import 추가 */
         } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
 
-        // Firebase 설정
+        // Firebase 설정 (사용자 정보는 동일)
         const firebaseConfig = {
             apiKey: "AIzaSyB5TAYEoAEawpaYr1tR373OhCYumOc4B7o",
             authDomain: "chat-33290.firebaseapp.com",
@@ -189,6 +212,7 @@
         const colorPicker = document.getElementById('color-picker');
         const messageList = document.getElementById('message-list');
         const chatWindow = document.getElementById('chat-window');
+        const resetButton = document.getElementById('reset-db-button'); // 🔹 초기화 버튼 요소 가져오기
 
         // 메시지 전송
         chatForm.addEventListener('submit', (event) => {
@@ -204,7 +228,6 @@
                 return;
             }
 
-            // 🔹 색상과 크기 포함해서 DB 저장
             push(messagesRef, {
                 username,
                 message,
@@ -217,7 +240,7 @@
             messageInput.focus();
         });
 
-        // 🔹 실시간 메시지 표시
+        // 실시간 메시지 표시
         const messagesQuery = query(messagesRef, orderByChild('timestamp'));
         onChildAdded(messagesQuery, (snapshot) => {
             const data = snapshot.val();
@@ -233,7 +256,6 @@
             messageText.className = 'message-text';
             messageText.textContent = data.message;
 
-            // 🔹 색상 / 크기 적용
             messageText.style.color = data.color || '#000';
             messageText.style.fontSize = data.size || '14px';
 
@@ -243,6 +265,29 @@
             messageList.appendChild(li);
             chatWindow.scrollTop = chatWindow.scrollHeight;
         });
+
+        // 🔹 DB 초기화 기능 추가
+        resetButton.addEventListener('click', () => {
+            const password = prompt('데이터베이스를 초기화하려면 관리자 비밀번호(비밀번호0207)를 입력하세요:');
+            
+            if (password === '비밀번호0207') {
+                // Firebase DB의 'messages' 노드 전체 삭제
+                remove(messagesRef)
+                    .then(() => {
+                        alert('채팅 기록이 모두 삭제되었습니다.');
+                        // 화면의 메시지 목록도 비움
+                        messageList.innerHTML = '';
+                    })
+                    .catch((error) => {
+                        console.error('DB 삭제 오류:', error);
+                        alert('데이터 삭제 중 오류가 발생했습니다.');
+                    });
+            } else if (password !== null) { // '취소'가 아닌, 비밀번호를 입력했지만 틀린 경우
+                alert('비밀번호가 일치하지 않습니다.');
+            }
+            // (password가 null이면 - '취소' 버튼) 아무것도 하지 않음
+        });
+
     </script>
 
 </body>
