@@ -1,51 +1,142 @@
+```html
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firebase 실시간 채팅 앱</title>
+    <title>Firebase 실시간 채팅 앱 (v2)</title>
     <style>
+        :root {
+            /* 🔹 라이트 테마 (기본) */
+            --bg-color: #f4f4f4;
+            --container-bg: #fff;
+            --header-bg: #007bff;
+            --header-text: #fff;
+            --window-bg: #fff;
+            --window-border: #ddd;
+            --message-bg: #e9ecef;
+            --message-user: #495057;
+            --message-text: #212529;
+            --form-bg: #f8f9fa;
+            --input-bg: #fff;
+            --input-border: #ccc;
+            --input-text: #212529;
+            --button-bg: #007bff;
+            --button-text: #fff;
+            --button-hover-bg: #0056b3;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        /* 🔹 다크 테마 */
+        .theme-dark {
+            --bg-color: #2c2c2c;
+            --container-bg: #3a3a3a;
+            --header-bg: #004a99;
+            --header-text: #f0f0f0;
+            --window-bg: #333;
+            --window-border: #555;
+            --message-bg: #4f4f4f;
+            --message-user: #00aaff;
+            --message-text: #e0e0e0;
+            --form-bg: #444;
+            --input-bg: #555;
+            --input-border: #777;
+            --input-text: #f0f0f0;
+            --button-bg: #0056b3;
+            --button-text: #fff;
+            --button-hover-bg: #003d80;
+            --shadow-color: rgba(0, 0, 0, 0.4);
+        }
+
+        /* 🔹 파스텔 테마 */
+        .theme-pastel {
+            --bg-color: #fdf6f6;
+            --container-bg: #fff;
+            --header-bg: #ffc0cb; /* 핑크 */
+            --header-text: #5d3a3a;
+            --window-bg: #fff;
+            --window-border: #f0e4e4;
+            --message-bg: #fef6f7;
+            --message-user: #d94a64;
+            --message-text: #5b5b5b;
+            --form-bg: #fcf8f8;
+            --input-bg: #fff;
+            --input-border: #f0dcdc;
+            --input-text: #5d3a3a;
+            --button-bg: #ff8fab;
+            --button-text: #fff;
+            --button-hover-bg: #ff6b8f;
+            --shadow-color: rgba(200, 150, 150, 0.1);
+        }
+
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
                 Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            background-color: #f4f4f4;
+            background-color: var(--bg-color); /* 🔹 테마 적용 */
+            color: var(--message-text); /* 🔹 테마 적용 */
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
+            transition: background-color 0.3s;
         }
 
         .chat-container {
             width: 100%;
             max-width: 500px;
-            background-color: #fff;
+            background-color: var(--container-bg); /* 🔹 테마 적용 */
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px var(--shadow-color); /* 🔹 테마 적용 */
             display: flex;
             flex-direction: column;
             height: 80vh;
             max-height: 700px;
+            transition: background-color 0.3s, box-shadow 0.3s;
         }
 
         header {
-            background-color: #007bff;
-            color: white;
+            background-color: var(--header-bg); /* 🔹 테마 적용 */
+            color: var(--header-text); /* 🔹 테마 적용 */
             padding: 15px;
             text-align: center;
             font-size: 1.2rem;
             border-top-left-radius: 8px;
             border-top-right-radius: 8px;
-            position: relative; /* 🔹 버튼 위치 지정을 위해 추가 */
+            position: relative;
+            display: flex; /* 🔹 테마 셀렉트 배치를 위해 flex로 변경 */
+            justify-content: center; /* 🔹 중앙 정렬 */
+            align-items: center; /* 🔹 수직 중앙 정렬 */
+            transition: background-color 0.3s;
+        }
+        
+        /* 🔹 헤더 제목 */
+        header > span {
+            flex-grow: 1; /* 🔹 제목이 중앙을 차지하도록 */
         }
 
-        /* 🔹 DB 초기화 버튼 스타일 추가 */
+        /* 🔹 테마 선택 드롭다운 */
+        #theme-select {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 4px 6px;
+            border-radius: 4px;
+            border: 1px solid var(--input-border);
+            background-color: var(--input-bg);
+            color: var(--input-text);
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
         #reset-db-button {
             position: absolute;
             right: 15px;
             top: 50%;
             transform: translateY(-50%);
-            background-color: #dc3545; /* 경고를 의미하는 빨간색 */
+            background-color: #dc3545;
             color: white;
             border: none;
             padding: 6px 10px;
@@ -64,7 +155,9 @@
             flex-grow: 1;
             padding: 20px;
             overflow-y: auto;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid var(--window-border); /* 🔹 테마 적용 */
+            background-color: var(--window-bg); /* 🔹 테마 적용 */
+            transition: background-color 0.3s, border-color 0.3s;
         }
 
         #message-list {
@@ -76,24 +169,35 @@
         .message-item {
             margin-bottom: 15px;
             padding: 10px;
-            background-color: #e9ecef;
+            background-color: var(--message-bg); /* 🔹 테마 적용 */
             border-radius: 8px;
             max-width: 80%;
             word-wrap: break-word;
+            transition: background-color 0.3s;
         }
 
         .message-username {
             display: block;
             font-size: 0.8em;
             font-weight: bold;
-            color: #495057;
+            color: var(--message-user); /* 🔹 테마 적용 */
             margin-bottom: 4px;
+            transition: color 0.3s;
         }
 
         .message-text {
             font-size: 0.95em;
-            color: #212529;
+            color: var(--message-text); /* 🔹 테마 적용 */
             margin: 0;
+            transition: color 0.3s;
+        }
+        
+        /* 🔹 업로드된 이미지를 위한 스타일 */
+        .message-image {
+            max-width: 100%; /* 메시지 버블 안에 맞춤 */
+            border-radius: 5px;
+            margin-top: 5px;
+            cursor: pointer;
         }
 
         #chat-form {
@@ -101,58 +205,97 @@
             align-items: center;
             flex-wrap: wrap;
             padding: 15px;
-            background-color: #f8f9fa;
-            border-top: 1px solid #ddd;
+            background-color: var(--form-bg); /* 🔹 테마 적용 */
+            border-top: 1px solid var(--window-border); /* 🔹 테마 적용 */
             border-bottom-left-radius: 8px;
             border-bottom-right-radius: 8px;
+            transition: background-color 0.3s, border-color 0.3s;
         }
 
         #username-input {
             width: 90px;
             padding: 8px;
-            border: 1px solid #ccc;
+            border: 1px solid var(--input-border); /* 🔹 테마 적용 */
             border-radius: 4px;
             margin-right: 8px;
+            background-color: var(--input-bg); /* 🔹 테마 적용 */
+            color: var(--input-text); /* 🔹 테마 적용 */
         }
 
         #message-input {
             flex-grow: 1;
             padding: 8px;
-            border: 1px solid #ccc;
+            border: 1px solid var(--input-border); /* 🔹 테마 적용 */
             border-radius: 4px;
             margin-right: 8px;
             min-width: 100px;
+            background-color: var(--input-bg); /* 🔹 테마 적용 */
+            color: var(--input-text); /* 🔹 테마 적용 */
         }
 
         #font-size-select, #color-picker {
             margin-right: 8px;
             padding: 6px;
             border-radius: 4px;
-            border: 1px solid #ccc;
+            border: 1px solid var(--input-border); /* 🔹 테마 적용 */
+            background-color: var(--input-bg); /* 🔹 테마 적용 */
+            color: var(--input-text); /* 🔹 테마 적용 */
             cursor: pointer;
+        }
+        
+        #color-picker {
+             padding: 3px; /* 🔹 color-picker 패딩 조절 */
+        }
+
+        /* 🔹 이미지 업로드 버튼 스타일 */
+        #image-upload-input {
+            display: none; /* 실제 input은 숨김 */
+        }
+
+        #image-upload-label {
+            padding: 4px 10px;
+            border: 1px solid var(--input-border);
+            background-color: var(--input-bg);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.2rem; /* 이모지 크기 */
+            margin-right: 8px;
+            line-height: 1.3;
+        }
+        #image-upload-label:hover {
+            filter: brightness(0.9);
         }
 
         #send-button {
             padding: 8px 14px;
             border: none;
-            background-color: #007bff;
-            color: white;
+            background-color: var(--button-bg); /* 🔹 테마 적용 */
+            color: var(--button-text); /* 🔹 테마 적용 */
             border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
+            transition: background-color 0.3s;
         }
 
         #send-button:hover {
-            background-color: #0056b3;
+            background-color: var(--button-hover-bg); /* 🔹 테마 적용 */
+        }
+
+        #send-button:disabled {
+             background-color: #aaa;
+             cursor: not-allowed;
         }
     </style>
 </head>
-<body>
-
-    <div class="chat-container">
+<body class="theme-light"> <div class="chat-container">
         <header>
-            Firebase 실시간 채팅방
-            <button id="reset-db-button">초기화</button>
+            <select id="theme-select" title="테마 변경">
+                <option value="light">라이트</option>
+                <option value="dark">다크</option>
+                <option value="pastel">파스텔</option>
+            </select>
+
+            <span>Firebase 실시간 채팅방</span> <button id="reset-db-button">초기화</button>
         </header>
 
         <div class="chat-window" id="chat-window">
@@ -171,6 +314,9 @@
             </select>
 
             <input type="color" id="color-picker" value="#000000" title="글자 색상">
+            
+            <input type="file" id="image-upload-input" accept="image/*">
+            <label for="image-upload-input" id="image-upload-label" title="이미지 첨부">🖼️</label>
 
             <input type="text" id="message-input" placeholder="메시지를 입력하세요..." required>
             <button type="submit" id="send-button">전송</button>
@@ -178,7 +324,7 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
         import { 
             getDatabase, 
             ref, 
@@ -187,16 +333,14 @@
             serverTimestamp, 
             query, 
             orderByChild,
-            remove /* 🔹 remove 함수 import 추가 */
-        } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
+            remove
+        } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
 
-        // Firebase 설정 (사용자 정보는 동일)
         const firebaseConfig = {
             apiKey: "AIzaSyB5TAYEoAEawpaYr1tR373OhCYumOc4B7o",
             authDomain: "chat-33290.firebaseapp.com",
             databaseURL: "https://chat-33290-default-rtdb.firebaseio.com",
             projectId: "chat-33290",
-            storageBucket: "chat-33290.firebasestorage.app",
             messagingSenderId: "894357766876",
             appId: "1:894357766876:web:bd27cd3f1da7e29b3eaa19"
         };
@@ -205,6 +349,7 @@
         const database = getDatabase(app);
         const messagesRef = ref(database, 'messages');
 
+        // 요소 가져오기
         const chatForm = document.getElementById('chat-form');
         const usernameInput = document.getElementById('username-input');
         const messageInput = document.getElementById('message-input');
@@ -212,9 +357,33 @@
         const colorPicker = document.getElementById('color-picker');
         const messageList = document.getElementById('message-list');
         const chatWindow = document.getElementById('chat-window');
-        const resetButton = document.getElementById('reset-db-button'); // 🔹 초기화 버튼 요소 가져오기
+        const resetButton = document.getElementById('reset-db-button');
+        const themeSelect = document.getElementById('theme-select'); // 🔹 테마 셀렉트
+        const imageUploadInput = document.getElementById('image-upload-input'); // 🔹 이미지 인풋
+        const sendButton = document.getElementById('send-button'); // 🔹 전송 버튼 (업로드 시 비활성화용)
 
-        // 메시지 전송
+        // ----------------------------------------
+        // 🔹 테마 변경 기능
+        // ----------------------------------------
+        themeSelect.addEventListener('change', (e) => {
+            const theme = e.target.value;
+            document.body.className = ''; // 기존 테마 클래스 제거
+            document.body.classList.add(`theme-${theme}`);
+            localStorage.setItem('chatTheme', theme); // 🔹 선택한 테마 저장
+        });
+
+        // 🔹 페이지 로드 시 저장된 테마 적용
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('chatTheme') || 'light';
+            document.body.className = '';
+            document.body.classList.add(`theme-${savedTheme}`);
+            themeSelect.value = savedTheme;
+        });
+
+
+        // ----------------------------------------
+        // 🔹 텍스트 메시지 전송
+        // ----------------------------------------
         chatForm.addEventListener('submit', (event) => {
             event.preventDefault();
 
@@ -223,24 +392,85 @@
             const color = colorPicker.value;
             const size = fontSizeSelect.value;
 
-            if (!username || !message) {
-                alert('이름과 메시지를 모두 입력해주세요.');
-                return;
+            // 🔹 텍스트 메시지가 있을 때만 전송
+            if (message && username) {
+                push(messagesRef, {
+                    username,
+                    message,
+                    color,
+                    size,
+                    timestamp: serverTimestamp()
+                });
+
+                messageInput.value = '';
+                messageInput.focus();
+            } else if (!username) {
+                 alert('이름을 입력해주세요.');
+                 usernameInput.focus();
+            } else if (!message) {
+                 alert('메시지를 입력해주세요.');
+                 messageInput.focus();
             }
-
-            push(messagesRef, {
-                username,
-                message,
-                color,
-                size,
-                timestamp: serverTimestamp()
-            });
-
-            messageInput.value = '';
-            messageInput.focus();
         });
 
-        // 실시간 메시지 표시
+        // ----------------------------------------
+        // 🔹 이미지 메시지 전송 (파일 선택 시, Base64로 변환하여 DB 저장)
+        // ----------------------------------------
+        imageUploadInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            const username = usernameInput.value.trim();
+
+            if (!file) return; // 파일 선택 안함
+
+            if (!username) {
+                alert('이미지를 업로드하려면 먼저 이름을 입력하세요.');
+                imageUploadInput.value = ''; // 파일 선택 초기화
+                return;
+            }
+            
+            // 🔹 용량 제한 (예: 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                 alert('5MB 이하의 이미지만 업로드할 수 있습니다.');
+                 imageUploadInput.value = '';
+                 return;
+            }
+
+            // 🔹 업로드 시작 알림 (버튼 비활성화)
+            sendButton.disabled = true;
+            sendButton.textContent = '업로드 중...';
+
+            // 🔹 파일을 Base64로 변환
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const base64Data = event.target.result; // data:image/type;base64,...
+
+                // 🔹 DB에 Base64 문자열 저장
+                push(messagesRef, {
+                    username,
+                    imageBase64: base64Data, // Base64 데이터 저장
+                    timestamp: serverTimestamp()
+                });
+
+                // 폼 초기화 및 버튼 활성화
+                imageUploadInput.value = ''; 
+                sendButton.disabled = false;
+                sendButton.textContent = '전송';
+            };
+
+            reader.onerror = (error) => {
+                console.error('파일 읽기 오류:', error);
+                alert('이미지 변환에 실패했습니다.');
+                sendButton.disabled = false;
+                sendButton.textContent = '전송';
+            };
+
+            reader.readAsDataURL(file); // 파일을 Data URL (Base64)로 읽음
+        });
+
+
+        // ----------------------------------------
+        // 🔹 실시간 메시지 표시 (텍스트/이미지 구분)
+        // ----------------------------------------
         const messagesQuery = query(messagesRef, orderByChild('timestamp'));
         onChildAdded(messagesQuery, (snapshot) => {
             const data = snapshot.val();
@@ -252,43 +482,63 @@
             usernameSpan.className = 'message-username';
             usernameSpan.textContent = data.username;
 
-            const messageText = document.createElement('p');
-            messageText.className = 'message-text';
-            messageText.textContent = data.message;
-
-            messageText.style.color = data.color || '#000';
-            messageText.style.fontSize = data.size || '14px';
-
             li.appendChild(usernameSpan);
-            li.appendChild(messageText);
+
+            // 🔹 data 객체에 message가 있는지 imageBase64가 있는지 확인
+            if (data.message) {
+                // 텍스트 메시지 렌더링
+                const messageText = document.createElement('p');
+                messageText.className = 'message-text';
+                messageText.textContent = data.message;
+
+                messageText.style.color = data.color || 'var(--message-text)'; // 테마 변수 사용
+                messageText.style.fontSize = data.size || '14px';
+
+                li.appendChild(messageText);
+
+            } else if (data.imageBase64) {
+                // 🔹 이미지 메시지 렌더링 (Base64 사용)
+                const messageImage = document.createElement('img');
+                messageImage.className = 'message-image';
+                messageImage.src = data.imageBase64;
+                messageImage.alt = '채팅 이미지';
+                
+                // 🔹 이미지 클릭 시 새 탭에서 원본 보기
+                messageImage.addEventListener('click', () => {
+                    window.open(data.imageBase64, '_blank');
+                });
+                
+                li.appendChild(messageImage);
+            }
+
 
             messageList.appendChild(li);
             chatWindow.scrollTop = chatWindow.scrollHeight;
         });
 
-        // 🔹 DB 초기화 기능 추가
+        // ----------------------------------------
+        // 🔹 DB 초기화 기능 (기존과 동일)
+        // ----------------------------------------
         resetButton.addEventListener('click', () => {
             const password = prompt('데이터베이스를 초기화하려면 관리자 비밀번호(비밀번호0207)를 입력하세요:');
             
             if (password === '비밀번호0207') {
-                // Firebase DB의 'messages' 노드 전체 삭제
                 remove(messagesRef)
                     .then(() => {
                         alert('채팅 기록이 모두 삭제되었습니다.');
-                        // 화면의 메시지 목록도 비움
                         messageList.innerHTML = '';
                     })
                     .catch((error) => {
                         console.error('DB 삭제 오류:', error);
                         alert('데이터 삭제 중 오류가 발생했습니다.');
                     });
-            } else if (password !== null) { // '취소'가 아닌, 비밀번호를 입력했지만 틀린 경우
+            } else if (password !== null) { 
                 alert('비밀번호가 일치하지 않습니다.');
             }
-            // (password가 null이면 - '취소' 버튼) 아무것도 하지 않음
         });
 
     </script>
 
 </body>
 </html>
+```
