@@ -1,544 +1,494 @@
-```html
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firebase 실시간 채팅 앱 (v2)</title>
+    <title>DDD: 절망의 대가 - 세계관 및 캐릭터 데이터베이스</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700;900&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'sans-serif'],
+                        orbitron: ['Orbitron', 'sans-serif'],
+                    },
+                    colors: {
+                        ddd: '#06b6d4', // Cyan
+                        arcana: '#f59e0b', // Amber
+                        entropy: '#ec4899', // Pink
+                        darkbg: '#0f172a',
+                        cardbg: '#1e293b',
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-5px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        :root {
-            /* 🔹 라이트 테마 (기본) */
-            --bg-color: #f4f4f4;
-            --container-bg: #fff;
-            --header-bg: #007bff;
-            --header-text: #fff;
-            --window-bg: #fff;
-            --window-border: #ddd;
-            --message-bg: #e9ecef;
-            --message-user: #495057;
-            --message-text: #212529;
-            --form-bg: #f8f9fa;
-            --input-bg: #fff;
-            --input-border: #ccc;
-            --input-text: #212529;
-            --button-bg: #007bff;
-            --button-text: #fff;
-            --button-hover-bg: #0056b3;
-            --shadow-color: rgba(0, 0, 0, 0.1);
-        }
-
-        /* 🔹 다크 테마 */
-        .theme-dark {
-            --bg-color: #2c2c2c;
-            --container-bg: #3a3a3a;
-            --header-bg: #004a99;
-            --header-text: #f0f0f0;
-            --window-bg: #333;
-            --window-border: #555;
-            --message-bg: #4f4f4f;
-            --message-user: #00aaff;
-            --message-text: #e0e0e0;
-            --form-bg: #444;
-            --input-bg: #555;
-            --input-border: #777;
-            --input-text: #f0f0f0;
-            --button-bg: #0056b3;
-            --button-text: #fff;
-            --button-hover-bg: #003d80;
-            --shadow-color: rgba(0, 0, 0, 0.4);
-        }
-
-        /* 🔹 파스텔 테마 */
-        .theme-pastel {
-            --bg-color: #fdf6f6;
-            --container-bg: #fff;
-            --header-bg: #ffc0cb; /* 핑크 */
-            --header-text: #5d3a3a;
-            --window-bg: #fff;
-            --window-border: #f0e4e4;
-            --message-bg: #fef6f7;
-            --message-user: #d94a64;
-            --message-text: #5b5b5b;
-            --form-bg: #fcf8f8;
-            --input-bg: #fff;
-            --input-border: #f0dcdc;
-            --input-text: #5d3a3a;
-            --button-bg: #ff8fab;
-            --button-text: #fff;
-            --button-hover-bg: #ff6b8f;
-            --shadow-color: rgba(200, 150, 150, 0.1);
-        }
-
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-                Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            background-color: var(--bg-color); /* 🔹 테마 적용 */
-            color: var(--message-text); /* 🔹 테마 적용 */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            transition: background-color 0.3s;
+            background-color: #05050a;
+            color: #e2e8f0;
+            overflow-x: hidden;
         }
-
-        .chat-container {
-            width: 100%;
-            max-width: 500px;
-            background-color: var(--container-bg); /* 🔹 테마 적용 */
-            border-radius: 8px;
-            box-shadow: 0 4px 12px var(--shadow-color); /* 🔹 테마 적용 */
-            display: flex;
-            flex-direction: column;
-            height: 80vh;
-            max-height: 700px;
-            transition: background-color 0.3s, box-shadow 0.3s;
-        }
-
-        header {
-            background-color: var(--header-bg); /* 🔹 테마 적용 */
-            color: var(--header-text); /* 🔹 테마 적용 */
-            padding: 15px;
-            text-align: center;
-            font-size: 1.2rem;
-            border-top-left-radius: 8px;
-            border-top-right-radius: 8px;
+        .glitch-text {
             position: relative;
-            display: flex; /* 🔹 테마 셀렉트 배치를 위해 flex로 변경 */
-            justify-content: center; /* 🔹 중앙 정렬 */
-            align-items: center; /* 🔹 수직 중앙 정렬 */
-            transition: background-color 0.3s;
         }
-        
-        /* 🔹 헤더 제목 */
-        header > span {
-            flex-grow: 1; /* 🔹 제목이 중앙을 차지하도록 */
-        }
-
-        /* 🔹 테마 선택 드롭다운 */
-        #theme-select {
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text);
             position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            padding: 4px 6px;
-            border-radius: 4px;
-            border: 1px solid var(--input-border);
-            background-color: var(--input-bg);
-            color: var(--input-text);
-            font-size: 0.8rem;
-            cursor: pointer;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
         }
-
-        #reset-db-button {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            padding: 6px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            font-weight: bold;
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -1px 0 #00ffff;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim 5s infinite linear alternate-reverse;
         }
-
-        #reset-db-button:hover {
-            background-color: #c82333;
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: -1px 0 #ff00ff;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim2 5s infinite linear alternate-reverse;
         }
-
-
-        .chat-window {
-            flex-grow: 1;
-            padding: 20px;
-            overflow-y: auto;
-            border-bottom: 1px solid var(--window-border); /* 🔹 테마 적용 */
-            background-color: var(--window-bg); /* 🔹 테마 적용 */
-            transition: background-color 0.3s, border-color 0.3s;
+        @keyframes glitch-anim {
+            0% { clip: rect(34px, 9999px, 11px, 0); }
+            20% { clip: rect(78px, 9999px, 89px, 0); }
+            40% { clip: rect(23px, 9999px, 4px, 0); }
+            60% { clip: rect(65px, 9999px, 87px, 0); }
+            80% { clip: rect(12px, 9999px, 34px, 0); }
+            100% { clip: rect(54px, 9999px, 67px, 0); }
         }
-
-        #message-list {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .message-item {
-            margin-bottom: 15px;
-            padding: 10px;
-            background-color: var(--message-bg); /* 🔹 테마 적용 */
-            border-radius: 8px;
-            max-width: 80%;
-            word-wrap: break-word;
-            transition: background-color 0.3s;
-        }
-
-        .message-username {
-            display: block;
-            font-size: 0.8em;
-            font-weight: bold;
-            color: var(--message-user); /* 🔹 테마 적용 */
-            margin-bottom: 4px;
-            transition: color 0.3s;
-        }
-
-        .message-text {
-            font-size: 0.95em;
-            color: var(--message-text); /* 🔹 테마 적용 */
-            margin: 0;
-            transition: color 0.3s;
+        @keyframes glitch-anim2 {
+            0% { clip: rect(14px, 9999px, 31px, 0); }
+            20% { clip: rect(58px, 9999px, 69px, 0); }
+            40% { clip: rect(13px, 9999px, 2px, 0); }
+            60% { clip: rect(45px, 9999px, 57px, 0); }
+            80% { clip: rect(2px, 9999px, 14px, 0); }
+            100% { clip: rect(34px, 9999px, 47px, 0); }
         }
         
-        /* 🔹 업로드된 이미지를 위한 스타일 */
-        .message-image {
-            max-width: 100%; /* 메시지 버블 안에 맞춤 */
-            border-radius: 5px;
-            margin-top: 5px;
-            cursor: pointer;
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
         }
-
-        #chat-form {
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            padding: 15px;
-            background-color: var(--form-bg); /* 🔹 테마 적용 */
-            border-top: 1px solid var(--window-border); /* 🔹 테마 적용 */
-            border-bottom-left-radius: 8px;
-            border-bottom-right-radius: 8px;
-            transition: background-color 0.3s, border-color 0.3s;
+        ::-webkit-scrollbar-track {
+            background: #0f172a; 
         }
-
-        #username-input {
-            width: 90px;
-            padding: 8px;
-            border: 1px solid var(--input-border); /* 🔹 테마 적용 */
+        ::-webkit-scrollbar-thumb {
+            background: #334155; 
             border-radius: 4px;
-            margin-right: 8px;
-            background-color: var(--input-bg); /* 🔹 테마 적용 */
-            color: var(--input-text); /* 🔹 테마 적용 */
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569; 
         }
 
-        #message-input {
-            flex-grow: 1;
-            padding: 8px;
-            border: 1px solid var(--input-border); /* 🔹 테마 적용 */
-            border-radius: 4px;
-            margin-right: 8px;
-            min-width: 100px;
-            background-color: var(--input-bg); /* 🔹 테마 적용 */
-            color: var(--input-text); /* 🔹 테마 적용 */
+        .faction-card {
+            transition: all 0.3s ease;
         }
-
-        #font-size-select, #color-picker {
-            margin-right: 8px;
-            padding: 6px;
-            border-radius: 4px;
-            border: 1px solid var(--input-border); /* 🔹 테마 적용 */
-            background-color: var(--input-bg); /* 🔹 테마 적용 */
-            color: var(--input-text); /* 🔹 테마 적용 */
-            cursor: pointer;
-        }
-        
-        #color-picker {
-             padding: 3px; /* 🔹 color-picker 패딩 조절 */
-        }
-
-        /* 🔹 이미지 업로드 버튼 스타일 */
-        #image-upload-input {
-            display: none; /* 실제 input은 숨김 */
-        }
-
-        #image-upload-label {
-            padding: 4px 10px;
-            border: 1px solid var(--input-border);
-            background-color: var(--input-bg);
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1.2rem; /* 이모지 크기 */
-            margin-right: 8px;
-            line-height: 1.3;
-        }
-        #image-upload-label:hover {
-            filter: brightness(0.9);
-        }
-
-        #send-button {
-            padding: 8px 14px;
-            border: none;
-            background-color: var(--button-bg); /* 🔹 테마 적용 */
-            color: var(--button-text); /* 🔹 테마 적용 */
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.3s;
-        }
-
-        #send-button:hover {
-            background-color: var(--button-hover-bg); /* 🔹 테마 적용 */
-        }
-
-        #send-button:disabled {
-             background-color: #aaa;
-             cursor: not-allowed;
+        .faction-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
         }
     </style>
 </head>
-<body class="theme-light"> <div class="chat-container">
-        <header>
-            <select id="theme-select" title="테마 변경">
-                <option value="light">라이트</option>
-                <option value="dark">다크</option>
-                <option value="pastel">파스텔</option>
-            </select>
+<body class="antialiased">
 
-            <span>Firebase 실시간 채팅방</span> <button id="reset-db-button">초기화</button>
-        </header>
-
-        <div class="chat-window" id="chat-window">
-            <ul id="message-list"></ul>
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-orbitron font-bold tracking-widest text-white">DDD <span class="text-xs align-top text-gray-500">DATABASE</span></span>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-8">
+                        <a href="#world" class="hover:text-ddd transition-colors px-3 py-2 rounded-md text-sm font-medium">WORLD</a>
+                        <a href="#factions" class="hover:text-arcana transition-colors px-3 py-2 rounded-md text-sm font-medium">FACTIONS</a>
+                        <a href="#characters" class="hover:text-entropy transition-colors px-3 py-2 rounded-md text-sm font-medium">CHARACTERS</a>
+                    </div>
+                </div>
+            </div>
         </div>
+    </nav>
 
-        <form id="chat-form">
-            <input type="text" id="username-input" placeholder="이름" required>
-
-            <select id="font-size-select" title="글자 크기">
-                <option value="12px">12</option>
-                <option value="14px" selected>14</option>
-                <option value="16px">16</option>
-                <option value="18px">18</option>
-                <option value="20px">20</option>
-            </select>
-
-            <input type="color" id="color-picker" value="#000000" title="글자 색상">
-            
-            <input type="file" id="image-upload-input" accept="image/*">
-            <label for="image-upload-input" id="image-upload-label" title="이미지 첨부">🖼️</label>
-
-            <input type="text" id="message-input" placeholder="메시지를 입력하세요..." required>
-            <button type="submit" id="send-button">전송</button>
-        </form>
+    <!-- Hero Section -->
+    <div class="relative overflow-hidden bg-darkbg min-h-screen flex items-center justify-center">
+        <div class="absolute inset-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-ddd via-arcana to-entropy"></div>
+        
+        <div class="relative z-10 text-center px-4 max-w-4xl mx-auto">
+            <div class="inline-block mb-4 px-4 py-1 border border-red-500/50 rounded-full bg-red-900/20 text-red-400 text-xs font-mono tracking-widest animate-pulse">
+                WARNING: RESTRICTED ACCESS // LEVEL 4
+            </div>
+            <h1 class="text-5xl md:text-7xl font-bold font-orbitron mb-2 glitch-text" data-text="DESTINY DEFECT DISORDER">
+                DESTINY DEFECT DISORDER
+            </h1>
+            <p class="text-xl md:text-2xl text-gray-400 font-light tracking-widest mb-8">
+                절망의 대가 : The Cost of Despair
+            </p>
+            <p class="text-gray-300 mb-10 max-w-2xl mx-auto leading-relaxed">
+                14세, 능력의 개화와 함께 찾아오는 '대가'.<br>
+                당신은 이 절망적인 세계에서 어떤 선택을 할 것인가?<br>
+                정부의 <span class="text-ddd font-bold">통제</span>, 레지스탕스의 <span class="text-arcana font-bold">자유</span>, 혹은 광신도의 <span class="text-entropy font-bold">파멸</span>.
+            </p>
+            <a href="#characters" class="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-sm text-black bg-white hover:bg-gray-200 transition-all transform hover:scale-105">
+                <i class="fas fa-database mr-2"></i> 데이터베이스 접속
+            </a>
+        </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-        import { 
-            getDatabase, 
-            ref, 
-            push, 
-            onChildAdded, 
-            serverTimestamp, 
-            query, 
-            orderByChild,
-            remove
-        } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
+    <!-- Worldview Section -->
+    <section id="world" class="py-20 bg-black">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-white mb-4 border-l-4 border-white pl-4 inline-block">SYSTEM KERNEL</h2>
+                <p class="text-gray-400 mt-2">세계관 핵심 법칙 및 패널티 정보</p>
+            </div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyB5TAYEoAEawpaYr1tR373OhCYumOc4B7o",
-            authDomain: "chat-33290.firebaseapp.com",
-            databaseURL: "https://chat-33290-default-rtdb.firebaseio.com",
-            projectId: "chat-33290",
-            messagingSenderId: "894357766876",
-            appId: "1:894357766876:web:bd27cd3f1da7e29b3eaa19"
-        };
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Rule 1 -->
+                <div class="bg-cardbg p-8 rounded-lg border border-white/5 hover:border-ddd/50 transition-colors">
+                    <div class="text-ddd text-4xl mb-4"><i class="fas fa-dna"></i></div>
+                    <h3 class="text-xl font-bold mb-3">개화 (The Awakening)</h3>
+                    <ul class="text-gray-400 text-sm space-y-2 list-disc list-inside">
+                        <li><strong class="text-white">시기:</strong> 14세 (2차 성징 및 DNA 변이)</li>
+                        <li><strong class="text-white">트리거:</strong> 극심한 정신적 스트레스</li>
+                        <li><strong class="text-white">현황:</strong> 전수 DNA 검사 및 강제 격리 조치 시행 중</li>
+                    </ul>
+                </div>
+                
+                <!-- Rule 2 -->
+                <div class="bg-cardbg p-8 rounded-lg border border-white/5 hover:border-arcana/50 transition-colors">
+                    <div class="text-arcana text-4xl mb-4"><i class="fas fa-skull-crossbones"></i></div>
+                    <h3 class="text-xl font-bold mb-3">공통 패널티</h3>
+                    <ul class="text-gray-400 text-sm space-y-2 list-disc list-inside">
+                        <li><strong class="text-white">존재의 불협화음:</strong> 외계 법칙 사용의 부작용</li>
+                        <li><strong class="text-white">자살 충동:</strong> 영혼의 마모로 인한 극단적 충동</li>
+                        <li><strong class="text-white">블로커:</strong> 충동 억제제이자 능력 억제제</li>
+                    </ul>
+                </div>
 
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
-        const messagesRef = ref(database, 'messages');
+                <!-- Rule 3 -->
+                <div class="bg-cardbg p-8 rounded-lg border border-white/5 hover:border-entropy/50 transition-colors">
+                    <div class="text-entropy text-4xl mb-4"><i class="fas fa-balance-scale-right"></i></div>
+                    <h3 class="text-xl font-bold mb-3">능력의 3대 분류</h3>
+                    <ul class="text-gray-400 text-sm space-y-2">
+                        <li class="border-b border-white/10 pb-1"><span class="text-ddd font-bold">페르소나:</span> 감정을 연료로 사용 / 감정 상실</li>
+                        <li class="border-b border-white/10 pb-1"><span class="text-arcana font-bold">시간부:</span> 수명을 담보로 사용 / 끔찍한 최후</li>
+                        <li><span class="text-entropy font-bold">죄악:</span> 쾌감 중독 / 정신적 타락</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
 
-        // 요소 가져오기
-        const chatForm = document.getElementById('chat-form');
-        const usernameInput = document.getElementById('username-input');
-        const messageInput = document.getElementById('message-input');
-        const fontSizeSelect = document.getElementById('font-size-select');
-        const colorPicker = document.getElementById('color-picker');
-        const messageList = document.getElementById('message-list');
-        const chatWindow = document.getElementById('chat-window');
-        const resetButton = document.getElementById('reset-db-button');
-        const themeSelect = document.getElementById('theme-select'); // 🔹 테마 셀렉트
-        const imageUploadInput = document.getElementById('image-upload-input'); // 🔹 이미지 인풋
-        const sendButton = document.getElementById('send-button'); // 🔹 전송 버튼 (업로드 시 비활성화용)
+    <!-- Factions & Characters Section -->
+    <section id="characters" class="py-20 bg-darkbg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-white mb-4 font-orbitron">TARGET DATA</h2>
+                <p class="text-gray-400">주요 관리 대상 및 요주의 인물 목록</p>
+            </div>
 
-        // ----------------------------------------
-        // 🔹 테마 변경 기능
-        // ----------------------------------------
-        themeSelect.addEventListener('change', (e) => {
-            const theme = e.target.value;
-            document.body.className = ''; // 기존 테마 클래스 제거
-            document.body.classList.add(`theme-${theme}`);
-            localStorage.setItem('chatTheme', theme); // 🔹 선택한 테마 저장
-        });
+            <!-- DDD Faction -->
+            <div class="mb-20">
+                <div class="flex items-center mb-8 border-b border-ddd/30 pb-4">
+                    <i class="fas fa-building text-3xl text-ddd mr-4"></i>
+                    <div>
+                        <h3 class="text-2xl font-bold text-white">DDD (Government)</h3>
+                        <p class="text-ddd text-sm">Destiny Defect Disorder Control Unit</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- 유세아 -->
+                    <div class="faction-card bg-black rounded-xl overflow-hidden border-t-4 border-ddd relative group">
+                        <div class="h-32 bg-gradient-to-b from-ddd/20 to-black flex items-center justify-center">
+                            <i class="fas fa-snowflake text-5xl text-ddd opacity-50 group-hover:scale-110 transition-transform"></i>
+                        </div>
+                        <div class="p-6 relative">
+                            <div class="absolute -top-10 right-4 w-16 h-16 bg-gray-800 rounded-full border-2 border-ddd flex items-center justify-center overflow-hidden">
+                                <span class="text-2xl">❄️</span>
+                            </div>
+                            <h4 class="text-xl font-bold text-white">유세아 (18)</h4>
+                            <p class="text-xs text-ddd mb-2">담당관 / P:절대영도</p>
+                            <p class="text-gray-400 text-sm mb-4 min-h-[40px]">
+                                "코드명 §U. 내 지시만 따라. 넌... 내가 지켜."
+                            </p>
+                            <div class="bg-gray-900 p-3 rounded text-xs space-y-1">
+                                <p><span class="text-gray-500">외형:</span> 은색 긴 생머리, 쿨뷰티, 제복</p>
+                                <p><span class="text-gray-500">성격:</span> 감정봉인, 냉정, 숨겨진 츤데레</p>
+                                <p><span class="text-gray-500">대가:</span> 감정 상실의 공포</p>
+                            </div>
+                        </div>
+                    </div>
 
-        // 🔹 페이지 로드 시 저장된 테마 적용
+                    <!-- 안가희 -->
+                    <div class="faction-card bg-black rounded-xl overflow-hidden border-t-4 border-ddd relative group">
+                        <div class="h-32 bg-gradient-to-b from-ddd/20 to-black flex items-center justify-center">
+                            <i class="fas fa-eye text-5xl text-ddd opacity-50 group-hover:scale-110 transition-transform"></i>
+                        </div>
+                        <div class="p-6 relative">
+                            <div class="absolute -top-10 right-4 w-16 h-16 bg-gray-800 rounded-full border-2 border-ddd flex items-center justify-center overflow-hidden">
+                                <span class="text-2xl">🥼</span>
+                            </div>
+                            <h4 class="text-xl font-bold text-white">안가희 (20)</h4>
+                            <p class="text-xs text-ddd mb-2">연구원 / T:사이코메트리</p>
+                            <p class="text-gray-400 text-sm mb-4 min-h-[40px]">
+                                "§U 씨? 당신의 '대가' 반응... 흥미로워요."
+                            </p>
+                            <div class="bg-gray-900 p-3 rounded text-xs space-y-1">
+                                <p><span class="text-gray-500">외형:</span> 갈색 단발, 안경, 백의</p>
+                                <p><span class="text-gray-500">성격:</span> 천재, 매드 사이언티스트 기질</p>
+                                <p><span class="text-gray-500">대가:</span> 수명 단축 (연구광)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 백시은 -->
+                    <div class="faction-card bg-black rounded-xl overflow-hidden border-t-4 border-ddd relative group">
+                        <div class="h-32 bg-gradient-to-b from-ddd/20 to-black flex items-center justify-center">
+                            <i class="fas fa-magnet text-5xl text-ddd opacity-50 group-hover:scale-110 transition-transform"></i>
+                        </div>
+                        <div class="p-6 relative">
+                            <div class="absolute -top-10 right-4 w-16 h-16 bg-gray-800 rounded-full border-2 border-ddd flex items-center justify-center overflow-hidden">
+                                <span class="text-2xl">🎀</span>
+                            </div>
+                            <h4 class="text-xl font-bold text-white">백시은 (17)</h4>
+                            <p class="text-xs text-ddd mb-2">엘리트 / P:중력제어</p>
+                            <p class="text-gray-400 text-sm mb-4 min-h-[40px]">
+                                "흥! 네가 그 신입? 내 발목이나 잡지 마."
+                            </p>
+                            <div class="bg-gray-900 p-3 rounded text-xs space-y-1">
+                                <p><span class="text-gray-500">외형:</span> 금발 트윈테일, 녹색 눈, 아가씨</p>
+                                <p><span class="text-gray-500">성격:</span> 오만, 라이벌 의식, 츤데레</p>
+                                <p><span class="text-gray-500">대가:</span> 오만에 잠식됨</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ARCANA Faction -->
+            <div class="mb-20">
+                <div class="flex items-center mb-8 border-b border-arcana/30 pb-4">
+                    <i class="fas fa-fist-raised text-3xl text-arcana mr-4"></i>
+                    <div>
+                        <h3 class="text-2xl font-bold text-white">ARCANA (Resistance)</h3>
+                        <p class="text-arcana text-sm">Freedom & Empathy</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- 한소미 -->
+                    <div class="faction-card bg-black rounded-xl overflow-hidden border-t-4 border-arcana relative group">
+                        <div class="h-32 bg-gradient-to-b from-arcana/20 to-black flex items-center justify-center">
+                            <i class="fas fa-heart text-5xl text-arcana opacity-50 group-hover:scale-110 transition-transform"></i>
+                        </div>
+                        <div class="p-6 relative">
+                            <div class="absolute -top-10 right-4 w-16 h-16 bg-gray-800 rounded-full border-2 border-arcana flex items-center justify-center overflow-hidden">
+                                <span class="text-2xl">🍊</span>
+                            </div>
+                            <h4 class="text-xl font-bold text-white">한소미 (14)</h4>
+                            <p class="text-xs text-arcana mb-2">구출조 / P:파토스링크</p>
+                            <p class="text-gray-400 text-sm mb-4 min-h-[40px]">
+                                "야! 걔네 말 믿지 마!! 우린 네 '편'이야! ㅠㅠ"
+                            </p>
+                            <div class="bg-gray-900 p-3 rounded text-xs space-y-1">
+                                <p><span class="text-gray-500">외형:</span> 오렌지색 숏컷, 활발, 울보</p>
+                                <p><span class="text-gray-500">성격:</span> 감정기복 심함, 동료애</p>
+                                <p><span class="text-gray-500">대가:</span> 타인의 감정에 휘둘림</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 강주아 -->
+                    <div class="faction-card bg-black rounded-xl overflow-hidden border-t-4 border-arcana relative group">
+                        <div class="h-32 bg-gradient-to-b from-arcana/20 to-black flex items-center justify-center">
+                            <i class="fas fa-home text-5xl text-arcana opacity-50 group-hover:scale-110 transition-transform"></i>
+                        </div>
+                        <div class="p-6 relative">
+                            <div class="absolute -top-10 right-4 w-16 h-16 bg-gray-800 rounded-full border-2 border-arcana flex items-center justify-center overflow-hidden">
+                                <span class="text-2xl">👩‍❤️‍💋‍👩</span>
+                            </div>
+                            <h4 class="text-xl font-bold text-white">강주아 (21)</h4>
+                            <p class="text-xs text-arcana mb-2">관리자 / P:세이프하우스</p>
+                            <p class="text-gray-400 text-sm mb-4 min-h-[40px]">
+                                "§U 군, 맞죠? 괜찮아요. 여긴 안전해요."
+                            </p>
+                            <div class="bg-gray-900 p-3 rounded text-xs space-y-1">
+                                <p><span class="text-gray-500">외형:</span> 흑갈색 롱헤어, 누님, 상냥</p>
+                                <p><span class="text-gray-500">성격:</span> 모성애, 헌신적, 포용</p>
+                                <p><span class="text-gray-500">대가:</span> 과도한 자기희생</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 레이 -->
+                    <div class="faction-card bg-black rounded-xl overflow-hidden border-t-4 border-arcana relative group">
+                        <div class="h-32 bg-gradient-to-b from-arcana/20 to-black flex items-center justify-center">
+                            <i class="fas fa-hourglass-half text-5xl text-arcana opacity-50 group-hover:scale-110 transition-transform"></i>
+                        </div>
+                        <div class="p-6 relative">
+                            <div class="absolute -top-10 right-4 w-16 h-16 bg-gray-800 rounded-full border-2 border-arcana flex items-center justify-center overflow-hidden">
+                                <span class="text-2xl">👁️</span>
+                            </div>
+                            <h4 class="text-xl font-bold text-white">레이 (16)</h4>
+                            <p class="text-xs text-arcana mb-2">첩보원 / T:미래예지</p>
+                            <p class="text-gray-400 text-sm mb-4 min-h-[40px]">
+                                "...새로운 사람. ...너. ...희망?"
+                            </p>
+                            <div class="bg-gray-900 p-3 rounded text-xs space-y-1">
+                                <p><span class="text-gray-500">외형:</span> 검은 숏컷, 잿빛 눈, 신비</p>
+                                <p><span class="text-gray-500">성격:</span> 과묵, 단답, 희생적</p>
+                                <p><span class="text-gray-500">대가:</span> 볼 때마다 수명 감소</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ENTROPY Faction -->
+            <div class="mb-20">
+                <div class="flex items-center mb-8 border-b border-entropy/30 pb-4">
+                    <i class="fas fa-bomb text-3xl text-entropy mr-4"></i>
+                    <div>
+                        <h3 class="text-2xl font-bold text-white">ENTROPY (Destruction)</h3>
+                        <p class="text-entropy text-sm">Chaos & Nirvana</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- 히나 -->
+                    <div class="faction-card bg-black rounded-xl overflow-hidden border-t-4 border-entropy relative group">
+                        <div class="h-32 bg-gradient-to-b from-entropy/20 to-black flex items-center justify-center">
+                            <i class="fas fa-spider text-5xl text-entropy opacity-50 group-hover:scale-110 transition-transform"></i>
+                        </div>
+                        <div class="p-6 relative">
+                            <div class="absolute -top-10 right-4 w-16 h-16 bg-gray-800 rounded-full border-2 border-entropy flex items-center justify-center overflow-hidden">
+                                <span class="text-2xl">🔪</span>
+                            </div>
+                            <h4 class="text-xl font-bold text-white">히나 (?)</h4>
+                            <p class="text-xs text-entropy mb-2">유혹자 / S:나이트메어</p>
+                            <p class="text-gray-400 text-sm mb-4 min-h-[40px]">
+                                "아파? 죽고 싶어? 후후... 전부 '부숴'버리면 즐거워♡"
+                            </p>
+                            <div class="bg-gray-900 p-3 rounded text-xs space-y-1">
+                                <p><span class="text-gray-500">외형:</span> 핑크 롱헤어, 붉은 눈, 얀데레</p>
+                                <p><span class="text-gray-500">성격:</span> 광기, 쾌락 중독, 집착</p>
+                                <p><span class="text-gray-500">대가:</span> 파괴 충동 중독</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 윤아 -->
+                    <div class="faction-card bg-black rounded-xl overflow-hidden border-t-4 border-entropy relative group">
+                        <div class="h-32 bg-gradient-to-b from-entropy/20 to-black flex items-center justify-center">
+                            <i class="fas fa-globe-americas text-5xl text-entropy opacity-50 group-hover:scale-110 transition-transform"></i>
+                        </div>
+                        <div class="p-6 relative">
+                            <div class="absolute -top-10 right-4 w-16 h-16 bg-gray-800 rounded-full border-2 border-entropy flex items-center justify-center overflow-hidden">
+                                <span class="text-2xl">🌑</span>
+                            </div>
+                            <h4 class="text-xl font-bold text-white">윤아 (17)</h4>
+                            <p class="text-xs text-entropy mb-2">예언자 / T:종말예지</p>
+                            <p class="text-gray-400 text-sm mb-4 min-h-[40px]">
+                                "...보여. §U의 비참한 최후. ...길은 하나뿐."
+                            </p>
+                            <div class="bg-gray-900 p-3 rounded text-xs space-y-1">
+                                <p><span class="text-gray-500">외형:</span> 은백색 머리, 안대, 운명론</p>
+                                <p><span class="text-gray-500">성격:</span> 신비주의, 허무주의</p>
+                                <p><span class="text-gray-500">대가:</span> 종말의 환영 누적</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 앨리스 -->
+                    <div class="faction-card bg-black rounded-xl overflow-hidden border-t-4 border-entropy relative group">
+                        <div class="h-32 bg-gradient-to-b from-entropy/20 to-black flex items-center justify-center">
+                            <i class="fas fa-gamepad text-5xl text-entropy opacity-50 group-hover:scale-110 transition-transform"></i>
+                        </div>
+                        <div class="p-6 relative">
+                            <div class="absolute -top-10 right-4 w-16 h-16 bg-gray-800 rounded-full border-2 border-entropy flex items-center justify-center overflow-hidden">
+                                <span class="text-2xl">🧸</span>
+                            </div>
+                            <h4 class="text-xl font-bold text-white">앨리스 (15)</h4>
+                            <p class="text-xs text-entropy mb-2">파괴자 / S:원더랜드</p>
+                            <p class="text-gray-400 text-sm mb-4 min-h-[40px]">
+                                "와! 새 장난감! 꺄르르! 나랑 놀자! '빵!'하고 터트리자!"
+                            </p>
+                            <div class="bg-gray-900 p-3 rounded text-xs space-y-1">
+                                <p><span class="text-gray-500">외형:</span> 하늘색 트윈테일, 로리, 광기</p>
+                                <p><span class="text-gray-500">성격:</span> 순수악, 윤리관 파괴</p>
+                                <p><span class="text-gray-500">대가:</span> 살인과 놀이의 혼동</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-black border-t border-white/10 py-12">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h2 class="text-2xl font-orbitron font-bold text-white mb-4">DDD PROJECT</h2>
+            <p class="text-gray-500 text-sm mb-8">
+                WARNING: Unauthorized access to this database is a Class A felony under the Awakened Control Act.<br>
+                All rights reserved by the DDD Administration Bureau.
+            </p>
+            <div class="flex justify-center space-x-6 text-2xl">
+                <a href="#" class="text-gray-500 hover:text-ddd transition-colors"><i class="fab fa-discord"></i></a>
+                <a href="#" class="text-gray-500 hover:text-white transition-colors"><i class="fab fa-github"></i></a>
+                <a href="#" class="text-gray-500 hover:text-arcana transition-colors"><i class="fas fa-envelope"></i></a>
+            </div>
+            <p class="mt-8 text-xs text-gray-600">
+                © 2024 DDD Simulation AI. Designed for Immersive Experience.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Simple entry animation using Intersection Observer
         document.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('chatTheme') || 'light';
-            document.body.className = '';
-            document.body.classList.add(`theme-${savedTheme}`);
-            themeSelect.value = savedTheme;
-        });
-
-
-        // ----------------------------------------
-        // 🔹 텍스트 메시지 전송
-        // ----------------------------------------
-        chatForm.addEventListener('submit', (event) => {
-            event.preventDefault();
-
-            const username = usernameInput.value.trim();
-            const message = messageInput.value.trim();
-            const color = colorPicker.value;
-            const size = fontSizeSelect.value;
-
-            // 🔹 텍스트 메시지가 있을 때만 전송
-            if (message && username) {
-                push(messagesRef, {
-                    username,
-                    message,
-                    color,
-                    size,
-                    timestamp: serverTimestamp()
-                });
-
-                messageInput.value = '';
-                messageInput.focus();
-            } else if (!username) {
-                 alert('이름을 입력해주세요.');
-                 usernameInput.focus();
-            } else if (!message) {
-                 alert('메시지를 입력해주세요.');
-                 messageInput.focus();
-            }
-        });
-
-        // ----------------------------------------
-        // 🔹 이미지 메시지 전송 (파일 선택 시, Base64로 변환하여 DB 저장)
-        // ----------------------------------------
-        imageUploadInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            const username = usernameInput.value.trim();
-
-            if (!file) return; // 파일 선택 안함
-
-            if (!username) {
-                alert('이미지를 업로드하려면 먼저 이름을 입력하세요.');
-                imageUploadInput.value = ''; // 파일 선택 초기화
-                return;
-            }
-            
-            // 🔹 용량 제한 (예: 5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                 alert('5MB 이하의 이미지만 업로드할 수 있습니다.');
-                 imageUploadInput.value = '';
-                 return;
-            }
-
-            // 🔹 업로드 시작 알림 (버튼 비활성화)
-            sendButton.disabled = true;
-            sendButton.textContent = '업로드 중...';
-
-            // 🔹 파일을 Base64로 변환
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const base64Data = event.target.result; // data:image/type;base64,...
-
-                // 🔹 DB에 Base64 문자열 저장
-                push(messagesRef, {
-                    username,
-                    imageBase64: base64Data, // Base64 데이터 저장
-                    timestamp: serverTimestamp()
-                });
-
-                // 폼 초기화 및 버튼 활성화
-                imageUploadInput.value = ''; 
-                sendButton.disabled = false;
-                sendButton.textContent = '전송';
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.1
             };
 
-            reader.onerror = (error) => {
-                console.error('파일 읽기 오류:', error);
-                alert('이미지 변환에 실패했습니다.');
-                sendButton.disabled = false;
-                sendButton.textContent = '전송';
-            };
-
-            reader.readAsDataURL(file); // 파일을 Data URL (Base64)로 읽음
-        });
-
-
-        // ----------------------------------------
-        // 🔹 실시간 메시지 표시 (텍스트/이미지 구분)
-        // ----------------------------------------
-        const messagesQuery = query(messagesRef, orderByChild('timestamp'));
-        onChildAdded(messagesQuery, (snapshot) => {
-            const data = snapshot.val();
-
-            const li = document.createElement('li');
-            li.className = 'message-item';
-
-            const usernameSpan = document.createElement('span');
-            usernameSpan.className = 'message-username';
-            usernameSpan.textContent = data.username;
-
-            li.appendChild(usernameSpan);
-
-            // 🔹 data 객체에 message가 있는지 imageBase64가 있는지 확인
-            if (data.message) {
-                // 텍스트 메시지 렌더링
-                const messageText = document.createElement('p');
-                messageText.className = 'message-text';
-                messageText.textContent = data.message;
-
-                messageText.style.color = data.color || 'var(--message-text)'; // 테마 변수 사용
-                messageText.style.fontSize = data.size || '14px';
-
-                li.appendChild(messageText);
-
-            } else if (data.imageBase64) {
-                // 🔹 이미지 메시지 렌더링 (Base64 사용)
-                const messageImage = document.createElement('img');
-                messageImage.className = 'message-image';
-                messageImage.src = data.imageBase64;
-                messageImage.alt = '채팅 이미지';
-                
-                // 🔹 이미지 클릭 시 새 탭에서 원본 보기
-                messageImage.addEventListener('click', () => {
-                    window.open(data.imageBase64, '_blank');
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('opacity-100', 'translate-y-0');
+                        entry.target.classList.remove('opacity-0', 'translate-y-10');
+                        observer.unobserve(entry.target);
+                    }
                 });
-                
-                li.appendChild(messageImage);
-            }
+            }, observerOptions);
 
-
-            messageList.appendChild(li);
-            chatWindow.scrollTop = chatWindow.scrollHeight;
+            const cards = document.querySelectorAll('.faction-card, .bg-cardbg');
+            cards.forEach(card => {
+                card.classList.add('transition-all', 'duration-700', 'opacity-0', 'translate-y-10');
+                observer.observe(card);
+            });
         });
-
-        // ----------------------------------------
-        // 🔹 DB 초기화 기능 (기존과 동일)
-        // ----------------------------------------
-        resetButton.addEventListener('click', () => {
-            const password = prompt('데이터베이스를 초기화하려면 관리자 비밀번호(비밀번호0207)를 입력하세요:');
-            
-            if (password === '비밀번호0207') {
-                remove(messagesRef)
-                    .then(() => {
-                        alert('채팅 기록이 모두 삭제되었습니다.');
-                        messageList.innerHTML = '';
-                    })
-                    .catch((error) => {
-                        console.error('DB 삭제 오류:', error);
-                        alert('데이터 삭제 중 오류가 발생했습니다.');
-                    });
-            } else if (password !== null) { 
-                alert('비밀번호가 일치하지 않습니다.');
-            }
-        });
-
     </script>
-
 </body>
 </html>
-```
